@@ -1,0 +1,38 @@
+# Code for https://www.websequencediagrams.com
+
+title Connection Sequence
+
+participant "Client\n\n\n\n192.168.0.128" as C
+participant "Envoy\nDownstream\nListener\n\n192.168.0.2" as L
+participant "Envoy\nFrozy Upstream\nCluster\n\n44.33.22.11" as Br
+participant "Envoy\nFrozy\nConnector\n\n10.0.0.2" as Cn
+participant "Envoy\nUpstream\nCluster\n\n" as U
+participant "Server\n\n\n\n10.0.0.99" as S
+
+note over C,Br: Network 192.168.0.0/24
+note over L,Br: Envoy Load Balancer
+note over Cn,S: Network 10.0.0.0/16
+note over Cn,U: Envoy Side-car
+note over Br,Cn: The Internet
+
+note over Cn,Br: C o n t r o l   c h a n n e l
+    Cn->Br: [0] Setup Control channel over TCP\n44.33.22.11:7070
+
+loop Data Connection
+note over C,S: D a t a    c o n n e c t i o n    
+    C->+L: [1] Connect over TCP\n192.168.0.2:5432
+    L->+Br: [2] Attach to\nFrozy Cluster
+    Br-->+Cn: [3] Request Data connection over\nthe existing Control channel
+    Cn-->+U: [4] Choose an upstream host
+    U-->-Cn: [5] Selected host:\n10.0.0.99
+    Cn->S: [6] Connect over TCP\n10.0.0.99:5432
+    Cn->-Br: [7] Establish a new connection to\nEnvoy Frozy Upstream
+    Br->-L: [8] Upstream attached
+    L->-C: [9] Start data transfer
+loop Data Transfer
+note over C,Br: Downstream connection -->
+note over Br,Cn: <-- Frozy inbound connection
+note over Cn,S: Upstream connection -->
+    C<-->S: [10] Bidirectional Data Transfer
+end
+end

@@ -94,6 +94,9 @@ message Cluster {
     // type<arch_overview_service_discovery_types_original_destination>`
     // for an explanation.
     ORIGINAL_DST = 4;
+
+    // Frozy upstream listener cluster.
+    FROZY = 5;
   }
   // The :ref:`service discovery type <arch_overview_service_discovery_types>`
   // to use for resolving the cluster.
@@ -574,6 +577,19 @@ message Cluster {
   // If this flag is not set to true, Envoy will wait until the hosts fail active health
   // checking before removing it from the cluster.
   bool drain_connections_on_host_removal = 32;
+
+  // Configuration for the Frozy Connector cluster
+  message FrozyConnectorConfig {
+    // Name of the cluster used to establish Frozy Control Channels 
+    // to Upstream Frozy clusters.
+    string upstream_cluster = 1 [(validate.rules).string.min_bytes = 1];
+    // If this flag is set to true, Envoy will establish a Frozy Control Channel to each
+    // resolved host of the upstream cluster, or to only one such host otherwise.
+    bool connect_to_all = 2;
+  }
+
+  // Configuration for the Frozy Connector cluster
+  FrozyConnectorConfig frozy_connector = 38;
 }
 
 // An extensible structure containing the address Envoy should bind to when

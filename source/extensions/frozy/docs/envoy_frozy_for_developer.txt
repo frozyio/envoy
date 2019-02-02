@@ -1,0 +1,74 @@
+# Code for https://www.websequencediagrams.com
+
+title Connection Sequence
+
+participant "Client\n\n\n" as C
+participant "Envoy\nListener\n\n" as L
+participant "Envoy\nFrozy Upstream\nCluster\n" as Br
+participant "Network\n\n\n" as N
+participant "Envoy\nFrozy\nConnector\n" as Cn
+participant "Server\n\n\n" as S
+
+note over L,Br: Envoy Load Balancer
+note over Cn: Envoy Side-car
+
+note over C,S: C o n t r o l    c h a n n e l    s e q u e n c e
+
+note over Br
+    For each host address in the Frozy cluster 
+    create an instance of FrozyCluster::UpstreamListener
+end note
+
+note over Cn
+    For selected (or all) Upstream::Host call
+    ControlState::initializeControlConnection()
+end note
+
+Cn->+N: ControlState::createControlConnection()
+N->-Br: Setup Control channel in\nUpstreamListener::onNewConnection()
+
+note over Br: 
+    Read the handshake bytes and call
+    UpstreamControl::registerUpstreamControl()
+end note
+
+note over Br 
+    For each control channel create 
+    an instance of FrozyCluster::DownstreamListener 
+    and add a new Upstream::Host to the cluster
+end note
+
+Br<-->Cn: DownstreamListener started and control channel established
+note over C,S: C l i e n t    c o n n e c t i o n    s e q u e n c e
+C->+L: Downstream connection\nto Envoy Listener
+L->+Br: Select Upstream::Host from the Frozy cluster\nand connect to FrozyCluster::DownstreamListener
+note over Br: UpstreamControl::registerDownstream()
+Br->+N: Frozy::UpstreamControl::requestUpstream()
+
+N->+Cn: Request upstream connection
+note over Cn: Frozy::ControlState::createUpstreamConnection()
+Cn->S: Choose Upstream::Host\nand connect
+note over Cn: Frozy::ControlState::upstreamConnected()
+Cn->-N: Frozy::ControlState::\ncreateDownstreamConnection()
+note over Cn
+    Add Frozy::DownstreamFilter
+    to the list of downstream connections.
+    Add Frozy::UpstreamCallbacks 
+    to the upstream connection.
+end note
+
+N->-Br: UpstreamListener::onNewConnection()
+note over Br
+    Read the handshake bytes and call
+    UpstreamControl::registerUpstreamService()
+end note
+note over Br
+    Add a new Frozy::ForwardFilter to the 
+    downstream and upstream connections
+end note    
+Br->-L: Connection is ready
+L->-C: Connection is ready
+
+C<-->S: Bidirectional Data Transfer
+
+

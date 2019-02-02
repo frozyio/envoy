@@ -1,0 +1,37 @@
+static_resources:
+
+  clusters:
+  # Frozy connector cluster
+  - name: frozy_connector_cluster
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    dns_lookup_family: V4_ONLY
+    frozy_connector: 
+      upstream_cluster: application_cluster
+      connect_to_all: true
+    hosts:
+    - socket_address:
+        address: envoy.frozy_broker
+        port_value: 7070
+  
+  # Upstream service cluster
+  - name: application_cluster
+    connect_timeout: 0.25s
+    type: STATIC
+    lb_policy: RANDOM
+    hosts:
+    - socket_address:
+        address: 127.0.0.1
+        port_value: 4040
+    - socket_address:
+        address: 127.0.0.1
+        port_value: 4041
+
+admin:
+  access_log_path: /tmp/envoy_frozy_connector_admin_access.log
+  address:
+    socket_address:
+      protocol: TCP
+      address: 127.0.0.1
+      port_value: 9902
+

@@ -38,6 +38,8 @@
 #include "server/transport_socket_config_impl.h"
 
 #include "extensions/transport_sockets/well_known_names.h"
+#include "extensions/frozy/upstream/cluster.h"
+#include "extensions/frozy/connector/control.h"
 
 namespace Envoy {
 namespace Upstream {
@@ -708,6 +710,11 @@ ClusterSharedPtr ClusterImplBase::create(
     new_cluster = std::make_unique<EdsClusterImpl>(cluster, runtime, factory_context,
                                                    std::move(stats_scope), added_via_api);
     break;
+  case envoy::api::v2::Cluster::FROZY:
+    new_cluster = std::make_unique<Frozy::FrozyClusterImpl>(
+        cluster, runtime, dispatcher, random, factory_context, std::move(stats_scope),
+        added_via_api);
+    break;
   default:
     NOT_REACHED_GCOVR_EXCL_LINE;
   }
@@ -720,6 +727,11 @@ ClusterSharedPtr ClusterImplBase::create(
       new_cluster->setHealthChecker(HealthCheckerFactory::create(
           cluster.health_checks()[0], *new_cluster, runtime, random, dispatcher, log_manager));
     }
+  }
+
+  if (!cluster.frozy_connector().upstream_cluster().empty()) {
+    Extensions::Frozy::ControlState::initializeControlConnection(
+      *new_cluster, cluster.frozy_connector(), cm, dispatcher);
   }
 
   new_cluster->setOutlierDetector(Outlier::DetectorImplFactory::createForCluster(
