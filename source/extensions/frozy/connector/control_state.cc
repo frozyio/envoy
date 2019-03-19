@@ -77,7 +77,7 @@ void ControlState::initializeControlConnection(
   if (config.connect_to_all()) {
     broker_cluster.prioritySet().addMemberUpdateCb(
         [control_manager,
-         upstream = config.upstream_cluster()](uint32_t, const Upstream::HostVector& hosts_added,
+         upstream = config.upstream_cluster()](const Upstream::HostVector& hosts_added,
                                                const Upstream::HostVector& hosts_removed) {
           ENVOY_LOG(info, "Frozy connector hosts added: {}, removed {}", hosts_added.size(),
                     hosts_removed.size());
