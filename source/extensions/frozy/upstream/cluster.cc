@@ -36,7 +36,7 @@ void FrozyClusterImpl::startPreInit() { onPreInitComplete(); }
 
 void FrozyClusterImpl::updateAllHosts(const HostVector& hosts_added,
                                       const HostVector& hosts_removed, uint32_t current_priority) {
-  PriorityStateManager priority_state_manager(*this, local_info_);
+  PriorityStateManager priority_state_manager(*this, local_info_, nullptr);
 
   for (const UpstreamListenerPtr& listener : upstream_listeners_) {
     priority_state_manager.initializePriorityFor(listener->locality_lb_endpoint_);
@@ -44,8 +44,8 @@ void FrozyClusterImpl::updateAllHosts(const HostVector& hosts_added,
               listener->address()->asString(), listener->hosts_.size());
     for (const auto& host : listener->hosts_) {
       if (listener->locality_lb_endpoint_.priority() == current_priority) {
-        priority_state_manager.registerHostForPriority(host.second, listener->locality_lb_endpoint_,
-                                                       listener->lb_endpoint_, absl::nullopt);
+        priority_state_manager.registerHostForPriority(host.second, 
+                                                       listener->locality_lb_endpoint_);
       }
     }
   }
@@ -135,7 +135,8 @@ void FrozyClusterImpl::UpstreamListener::onControlConnected(uint64_t control_con
   auto host = std::make_shared<HostImpl>(
       cluster_.info(), "", address, lb_endpoint_.metadata(),
       lb_endpoint_.load_balancing_weight().value(), locality_lb_endpoint_.locality(),
-      lb_endpoint_.endpoint().health_check_config(), locality_lb_endpoint_.priority());
+      lb_endpoint_.endpoint().health_check_config(), locality_lb_endpoint_.priority(),
+      envoy::api::v2::core::HealthStatus::UNKNOWN);
 
   hosts_[control_conn_id] = host;
   ENVOY_LOG(debug, "Frozy hosts added for upstream listener on {}", this->address()->asString());
